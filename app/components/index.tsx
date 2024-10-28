@@ -8,7 +8,6 @@ import { useBoolean, useGetState } from 'ahooks'
 import useConversation from '@/hooks/use-conversation'
 import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
-import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
 import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
@@ -79,21 +78,15 @@ const Main: FC = () => {
   } = useConversation()
 
   const [conversationIdChangeBecauseOfNew, setConversationIdChangeBecauseOfNew, getConversationIdChangeBecauseOfNew] = useGetState(false)
-  const [isChatStarted, { setTrue: setChatStarted, setFalse: setChatNotStarted }] = useBoolean(false)
+  // isChatStarted를 기본값 true로 설정
+  const [isChatStarted, { setTrue: setChatStarted, setFalse: setChatNotStarted }] = useBoolean(true) // 여기를 true로 변경
   const handleStartChat = (inputs: Record<string, any>) => {
     createNewChat()
     setConversationIdChangeBecauseOfNew(true)
     setCurrInputs(inputs)
-    setChatStarted()
-    // parse variables in introduction
+    // setChatStarted() - 제거 (이미 true로 시작하므로 필요없음)
     setChatList(generateNewChatListWithOpenStatement('', inputs))
   }
-  const hasSetInputs = (() => {
-    if (!isNewConversation)
-      return true
-
-    return isChatStarted
-  })()
 
   const conversationName = currConversationInfo?.name || t('app.chat.newChatDefaultName') as string
   const conversationIntroduction = currConversationInfo?.introduction || ''
@@ -156,11 +149,22 @@ const Main: FC = () => {
     if (id === '-1') {
       createNewChat()
       setConversationIdChangeBecauseOfNew(true)
+      // 새 채팅 시작 시 바로 채팅 시작 상태로 설정
+      setChatStarted()
+      // 빈 입력값으로 초기화
+      const emptyInputs: Record<string, any> = {}
+      if (promptConfig) {
+        promptConfig.prompt_variables.forEach((item) => {
+          emptyInputs[item.key] = ''
+        })
+      }
+      setCurrInputs(emptyInputs)
+      // 빈 채팅 리스트로 시작
+      setChatList([])
     }
     else {
       setConversationIdChangeBecauseOfNew(false)
     }
-    // trigger handleConversationSwitch
     setCurrConversationId(id, APP_ID)
     hideSidebar()
   }
@@ -222,27 +226,31 @@ const Main: FC = () => {
       try {
         const [conversationData, appParams] = await Promise.all([fetchConversations(), fetchAppParams()])
 
-        // handle current conversation id
         const { data: conversations } = conversationData as { data: ConversationItem[] }
         const _conversationId = getConversationIdFromStorage(APP_ID)
         const isNotNewConversation = conversations.some(item => item.id === _conversationId)
 
-        // fetch new conversation info
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters }: any = appParams
         setLocaleOnClient(APP_INFO.default_language, true)
+
         setNewConversationInfo({
           name: t('app.chat.newChatDefaultName'),
           introduction,
         })
+
+        // setChatStarted() 제거 - 이미 true로 시작
+
         const prompt_variables = userInputsFormToPromptVariables(user_input_form)
         setPromptConfig({
           prompt_template: promptTemplate,
           prompt_variables,
         } as PromptConfig)
+
         setVisionConfig({
           ...file_upload?.image,
           image_file_size_limit: system_parameters?.system_parameters || 0,
         })
+
         setConversationList(conversations as ConversationItem[])
 
         if (isNotNewConversation)
@@ -610,55 +618,38 @@ const Main: FC = () => {
     return <Loading type='app' />
 
   return (
-    <div className='bg-gray-100'>
+    <div className='flex flex-col h-screen bg-gray-50'>
       <Header
         title={APP_INFO.title}
         isMobile={isMobile}
         onShowSideBar={showSidebar}
         onCreateNewChat={() => handleConversationIdChange('-1')}
+        className="flex-shrink-0"
       />
-      <div className="flex rounded-t-2xl bg-white overflow-hidden">
-        {/* sidebar */}
+      <div className="flex flex-1 bg-white overflow-hidden">
         {!isMobile && renderSidebar()}
         {isMobile && isShowSidebar && (
-          <div className='fixed inset-0 z-50'
-            style={{ backgroundColor: 'rgba(35, 56, 118, 0.2)' }}
-            onClick={hideSidebar}
-          >
+          <div className='fixed inset-0 z-50 bg-black/30' onClick={hideSidebar}>
             <div className='inline-block' onClick={e => e.stopPropagation()}>
               {renderSidebar()}
             </div>
           </div>
         )}
-        {/* main */}
-        <div className='flex-grow flex flex-col h-[calc(100vh_-_3rem)] overflow-y-auto'>
-          <ConfigSence
-            conversationName={conversationName}
-            hasSetInputs={hasSetInputs}
-            isPublicVersion={isShowPrompt}
-            siteInfo={APP_INFO}
-            promptConfig={promptConfig}
-            onStartChat={handleStartChat}
-            canEditInputs={canEditInputs}
-            savedInputs={currInputs as Record<string, any>}
-            onInputsChange={setCurrInputs}
-          ></ConfigSence>
-
-          {
-            hasSetInputs && (
-              <div className='relative grow h-[200px] pc:w-[794px] max-w-full mobile:w-full pb-[66px] mx-auto mb-3.5 overflow-hidden'>
-                <div className='h-full overflow-y-auto' ref={chatListDomRef}>
-                  <Chat
-                    chatList={chatList}
-                    onSend={handleSend}
-                    onFeedback={handleFeedback}
-                    isResponding={isResponding}
-                    checkCanSend={checkCanSend}
-                    visionConfig={visionConfig}
-                  />
-                </div>
-              </div>)
-          }
+        <div className='flex-1 flex flex-col relative'>
+          <div className='flex-1 overflow-hidden'>
+            <div className='h-full max-w-4xl mx-auto px-4'>
+              <div className='h-full overflow-y-auto scrollbar-hide pt-10' ref={chatListDomRef}>
+                <Chat
+                  chatList={chatList}
+                  onSend={handleSend}
+                  onFeedback={handleFeedback}
+                  isResponding={isResponding}
+                  checkCanSend={checkCanSend}
+                  visionConfig={visionConfig}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

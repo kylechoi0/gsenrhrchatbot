@@ -8,6 +8,18 @@ module.exports = {
     typography: require('./typography'),
     extend: {
       colors: {
+        primary: {
+          50: '#F5F7FF',
+          100: '#ECF0FF',
+          200: '#D9E1FF',
+          300: '#B3C2FF',
+          400: '#8C9EFF',
+          500: '#536DFE', // 메인 컬러
+          600: '#3D5AFE',
+          700: '#3049E5',
+          800: '#2339CC',
+          900: '#1628B3',
+        },
         gray: {
           50: '#F9FAFB',
           100: '#F3F4F6',
@@ -18,14 +30,6 @@ module.exports = {
           700: '#374151',
           800: '#1F2A37',
           900: '#111928',
-        },
-        primary: {
-          50: '#EBF5FF',
-          100: '#E1EFFE',
-          200: '#C3DDFD',
-          300: '#A4CAFE',
-          600: '#1C64F2',
-          700: '#1A56DB',
         },
         blue: {
           500: '#E1EFFE',
@@ -56,6 +60,9 @@ module.exports = {
         // => @media (min-width: 600px) { ... }
         pc: '769px',
         // => @media (min-width: 769px) { ... }
+      },
+      boxShadow: {
+        chat: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03)',
       },
     },
   },

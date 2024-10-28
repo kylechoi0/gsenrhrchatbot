@@ -11,7 +11,6 @@ import Thought from '../thought'
 import { randomString } from '@/utils/string'
 import type { ChatItem, MessageRating, VisionFile } from '@/types/app'
 import Tooltip from '@/app/components/base/tooltip'
-import WorkflowProcess from '@/app/components/workflow/workflow-process'
 import { Markdown } from '@/app/components/base/markdown'
 import type { Emoji } from '@/types/tools'
 
@@ -169,33 +168,27 @@ const Answer: FC<IAnswerProps> = ({
     <div key={id}>
       <div className='flex items-start'>
         <div className={`${s.answerIcon} w-10 h-10 shrink-0`}>
-          {isResponding
-            && <div className={s.typeingIcon}>
+          {isResponding && (
+            <div className={s.typeingIcon}>
               <LoadingAnim type='avatar' />
             </div>
-          }
+          )}
         </div>
-        <div className={`${s.answerWrap}`}>
+        <div className={`${s.answerWrap} max-w-[calc(100%-4rem)]`}>
           <div className={`${s.answer} relative text-sm text-gray-900`}>
-            <div className={`ml-2 py-3 px-4 bg-gray-100 rounded-tr-2xl rounded-b-2xl ${workflowProcess && 'min-w-[480px]'}`}>
-              {workflowProcess && (
-                <WorkflowProcess data={workflowProcess} hideInfo />
-              )}
-              {(isResponding && (isAgentMode ? (!content && (agent_thoughts || []).filter(item => !!item.thought || !!item.tool).length === 0) : !content))
+            <div className={'ml-2 py-3 px-4 bg-gray-100 rounded-tr-2xl rounded-b-2xl overflow-hidden'}>
+              {(isResponding && !content)
                 ? (
                   <div className='flex items-center justify-center w-6 h-5'>
                     <LoadingAnim type='text' />
                   </div>
                 )
-                : (isAgentMode
-                  ? agentModeAnswer
-                  : (
-                    <Markdown content={content} />
-                  ))}
+                : (
+                  <Markdown content={content} />
+                )}
             </div>
             <div className='absolute top-[-14px] right-[-14px] flex flex-row justify-end gap-1'>
               {!feedbackDisabled && !item.feedbackDisabled && renderItemOperation()}
-              {/* User feedback must be displayed */}
               {!feedbackDisabled && renderFeedbackRating(feedback?.rating)}
             </div>
           </div>

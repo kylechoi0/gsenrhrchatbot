@@ -1,16 +1,14 @@
 'use client'
 import type { FC } from 'react'
 import React, { useEffect, useRef } from 'react'
-import cn from 'classnames'
 import { useTranslation } from 'react-i18next'
 import Textarea from 'rc-textarea'
-import s from './style.module.css'
 import Answer from './answer'
 import Question from './question'
 import type { FeedbackFunc } from './type'
+import styles from './style.module.css'
 import type { ChatItem, VisionFile, VisionSettings } from '@/types/app'
 import { TransferMethod } from '@/types/app'
-import Tooltip from '@/app/components/base/tooltip'
 import Toast from '@/app/components/base/toast'
 import ChatImageUploader from '@/app/components/base/image-uploader/chat-image-uploader'
 import ImageList from '@/app/components/base/image-uploader/image-list'
@@ -47,6 +45,7 @@ const Chat: FC<IChatProps> = ({
   controlClearQuery,
   visionConfig,
 }) => {
+  const chatListRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation()
   const { notify } = Toast
   const isUseInputMethod = useRef(false)
@@ -83,6 +82,11 @@ const Chat: FC<IChatProps> = ({
     onClear,
   } = useImageFiles()
 
+  useEffect(() => {
+    if (chatListRef.current)
+      chatListRef.current.scrollTop = chatListRef.current.scrollHeight
+  }, [chatList, isResponding])
+
   const handleSend = () => {
     if (!valid() || (checkCanSend && !checkCanSend()))
       return
@@ -101,10 +105,9 @@ const Chat: FC<IChatProps> = ({
   }
 
   const handleKeyUp = (e: any) => {
-    if (e.code === 'Enter') {
+    if (e.code === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      // prevent send message when using input method enter
-      if (!e.shiftKey && !isUseInputMethod.current)
+      if (!isUseInputMethod.current && query.trim())
         handleSend()
     }
   }
@@ -118,87 +121,87 @@ const Chat: FC<IChatProps> = ({
   }
 
   return (
-    <div className={cn(!feedbackDisabled && 'px-3.5', 'h-full')}>
-      {/* Chat List */}
-      <div className="h-full space-y-[30px]">
-        {chatList.map((item) => {
-          if (item.isAnswer) {
-            const isLast = item.id === chatList[chatList.length - 1].id
-            return <Answer
-              key={item.id}
-              item={item}
-              feedbackDisabled={feedbackDisabled}
-              onFeedback={onFeedback}
-              isResponding={isResponding && isLast}
-            />
-          }
-          return (
-            <Question
-              key={item.id}
-              id={item.id}
-              content={item.content}
-              useCurrentUserAvatar={useCurrentUserAvatar}
-              imgSrcs={(item.message_files && item.message_files?.length > 0) ? item.message_files.map(item => item.url) : []}
-            />
-          )
-        })}
+    <div className="flex flex-col h-full">
+      {/* 메시지 영역 */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="space-y-[30px]" ref={chatListRef}>
+          {chatList.map((item) => {
+            if (item.isAnswer) {
+              const isLast = item.id === chatList[chatList.length - 1].id
+              return <Answer
+                key={item.id}
+                item={item}
+                feedbackDisabled={feedbackDisabled}
+                onFeedback={onFeedback}
+                isResponding={isResponding && isLast}
+              />
+            }
+            return (
+              <Question
+                key={item.id}
+                id={item.id}
+                content={item.content}
+                useCurrentUserAvatar={useCurrentUserAvatar}
+                imgSrcs={(item.message_files && item.message_files?.length > 0) ? item.message_files.map(item => item.url) : []}
+              />
+            )
+          })}
+        </div>
       </div>
-      {
-        !isHideSendInput && (
-          <div className={cn(!feedbackDisabled && '!left-3.5 !right-3.5', 'absolute z-10 bottom-0 left-0 right-0')}>
-            <div className='p-[5.5px] max-h-[150px] bg-white border-[1.5px] border-gray-200 rounded-xl overflow-y-auto'>
-              {
-                visionConfig?.enabled && (
-                  <>
-                    <div className='absolute bottom-2 left-2 flex items-center'>
-                      <ChatImageUploader
-                        settings={visionConfig}
-                        onUpload={onUpload}
-                        disabled={files.length >= visionConfig.number_limits}
-                      />
-                      <div className='mx-1 w-[1px] h-4 bg-black/5' />
-                    </div>
-                    <div className='pl-[52px]'>
-                      <ImageList
-                        list={files}
-                        onRemove={onRemove}
-                        onReUpload={onReUpload}
-                        onImageLinkLoadSuccess={onImageLinkLoadSuccess}
-                        onImageLinkLoadError={onImageLinkLoadError}
-                      />
-                    </div>
-                  </>
-                )
-              }
+
+      {/* 입력창 영역 */}
+      {!isHideSendInput && (
+        <div className="flex-shrink-0 px-4 pb-4 bg-white">
+          <div className="relative bg-white rounded-2xl border border-gray-200 hover:border-gray-300 shadow-sm transition-colors">
+            {visionConfig?.enabled && (
+              <div className="absolute left-4 bottom-[15px] z-10">
+                <ChatImageUploader
+                  settings={visionConfig}
+                  onUpload={onUpload}
+                  disabled={files.length >= visionConfig.number_limits}
+                />
+              </div>
+            )}
+
+            {files.length > 0 && (
+              <div className="px-4 pt-4">
+                <ImageList
+                  list={files}
+                  onRemove={onRemove}
+                  onReUpload={onReUpload}
+                  onImageLinkLoadSuccess={onImageLinkLoadSuccess}
+                  onImageLinkLoadError={onImageLinkLoadError}
+                />
+              </div>
+            )}
+
+            <div className="relative flex items-end">
               <Textarea
                 className={`
-                  block w-full px-2 pr-[118px] py-[7px] leading-5 max-h-none text-sm text-gray-700 outline-none appearance-none resize-none
-                  ${visionConfig?.enabled && 'pl-12'}
+                  w-full px-4 py-[14px] text-[15px] leading-[1.6] text-gray-700
+                  outline-none resize-none bg-transparent
+                  ${visionConfig?.enabled ? 'pl-[52px]' : ''}
+                  ${files.length > 0 ? 'mt-2' : ''}
                 `}
                 value={query}
                 onChange={handleContentChange}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
-                autoSize
+                placeholder="메시지를 입력하세요..."
+                autoSize={{ minRows: 1, maxRows: 5 }}
               />
-              <div className="absolute bottom-2 right-2 flex items-center h-8">
-                <div className={`${s.count} mr-4 h-5 leading-5 text-sm bg-gray-50 text-gray-500`}>{query.trim().length}</div>
-                <Tooltip
-                  selector='send-tip'
-                  htmlContent={
-                    <div>
-                      <div>{t('common.operation.send')} Enter</div>
-                      <div>{t('common.operation.lineBreak')} Shift Enter</div>
-                    </div>
-                  }
-                >
-                  <div className={`${s.sendBtn} w-8 h-8 cursor-pointer rounded-md`} onClick={handleSend}></div>
-                </Tooltip>
+              <div className="absolute right-2 bottom-[10px] flex items-center">
+                <button
+                  className={`${styles.sendBtn} w-[32px] h-[32px] rounded-lg cursor-pointer transition-all duration-200 
+                    ${query.trim() ? 'opacity-100 hover:bg-blue-50' : 'opacity-50 cursor-not-allowed'}`}
+                  onClick={handleSend}
+                  disabled={!query.trim()}
+                />
               </div>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
     </div>
   )
 }

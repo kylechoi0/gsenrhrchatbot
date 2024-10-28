@@ -75,11 +75,18 @@
 
 .sendBtn {
   background: url(./icons/send.svg) center center no-repeat;
+  transition: all 0.2s ease;
 }
 
-.sendBtn:hover {
+.sendBtn:hover:not(:disabled) {
   background-image: url(./icons/send-active.svg);
   background-color: #EBF5FF;
+  transform: scale(1.05);
+}
+
+.sendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .textArea:focus+div .count {
@@ -88,4 +95,13 @@
 
 .textArea:focus+div .sendBtn {
   background-image: url(./icons/send-active.svg);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }

@@ -1,16 +1,6 @@
 .toast {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  width: 1.84rem;
-  height: 1.80rem;
-  left: 50%;
-  top: 50%;
-  transform: translateX(-50%) translateY(-50%);
-  background: #000000;
-  box-shadow: 0 -.04rem .1rem 1px rgba(255, 255, 255, 0.1);
-  border-radius: .1rem .1rem .1rem .1rem;
+  @apply fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg;
+  min-width: 18rem;
 }
 
 .main {
@@ -40,4 +30,8 @@
   text-align: center;
   font-size: .2rem;
   color: rgba(255, 255, 255, 0.86);
+}
+
+.success {
+  @apply bg-primary-500;
 }
