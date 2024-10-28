@@ -485,36 +485,31 @@ const Main: FC = () => {
         })
       },
       onMessageEnd: (messageEnd) => {
-        if (messageEnd.metadata?.annotation_reply) {
-          responseItem.id = messageEnd.id
-          responseItem.annotation = ({
-            id: messageEnd.metadata.annotation_reply.id,
-            authorName: messageEnd.metadata.annotation_reply.account.name,
-          } as AnnotationType)
-          const newListWithAnswer = produce(
-            getChatList().filter(item => item.id !== responseItem.id && item.id !== placeholderAnswerId),
-            (draft) => {
-              if (!draft.find(item => item.id === questionId))
-                draft.push({ ...questionItem })
+        try {
+          if (messageEnd.metadata?.annotation_reply) {
+            responseItem.id = messageEnd.id
+            responseItem.annotation = ({
+              id: messageEnd.metadata.annotation_reply.id,
+              authorName: messageEnd.metadata.annotation_reply.account.name,
+            } as AnnotationType)
 
-              draft.push({
-                ...responseItem,
+            const newListWithAnswer = produce(
+              getChatList().filter(item => item.id !== responseItem.id && item.id !== placeholderAnswerId),
+              (draft) => {
+                if (!draft.find(item => item.id === questionId))
+                  draft.push({ ...questionItem })
+                draft.push({ ...responseItem })
               })
-            })
-          setChatList(newListWithAnswer)
-          return
+            setChatList(newListWithAnswer)
+          }
         }
-        // not support show citation
-        // responseItem.citation = messageEnd.retriever_resources
-        const newListWithAnswer = produce(
-          getChatList().filter(item => item.id !== responseItem.id && item.id !== placeholderAnswerId),
-          (draft) => {
-            if (!draft.find(item => item.id === questionId))
-              draft.push({ ...questionItem })
-
-            draft.push({ ...responseItem })
-          })
-        setChatList(newListWithAnswer)
+        catch (error: any) {
+          if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+            setRespondingFalse()
+            Toast.error('응답 처리 중 시간이 초과되었습니다.')
+          }
+          console.error('Message processing error:', error)
+        }
       },
       onMessageReplace: (messageReplace) => {
         setChatList(produce(

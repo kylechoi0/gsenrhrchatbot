@@ -3,7 +3,7 @@ import Toast from '@/app/components/base/toast'
 import type { AnnotationReply, MessageEnd, MessageReplace, ThoughtItem } from '@/app/components/chat/type'
 import type { VisionFile } from '@/types/app'
 
-const TIME_OUT = 100000
+const TIME_OUT = 300000 // 5분으로 증가
 
 const ContentType = {
   json: 'application/json',
@@ -15,11 +15,21 @@ const ContentType = {
 const baseOptions = {
   method: 'GET',
   mode: 'cors',
-  credentials: 'include', // always send cookies、HTTP Basic authentication.
+  credentials: 'include',
   headers: new Headers({
     'Content-Type': ContentType.json,
   }),
   redirect: 'follow',
+  timeout: TIME_OUT,
+}
+
+// 타임아웃 에러 핸들링 추가
+const handleRequestTimeout = (error: any) => {
+  if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+    Toast.error('응답 시간이 초과되었습니다. 다시 시도해주세요.')
+    return null
+  }
+  throw error
 }
 
 export type WorkflowStartedResponse = {

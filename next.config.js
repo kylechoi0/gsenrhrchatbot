@@ -5,6 +5,9 @@ const nextConfig = {
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
   experimental: {
     // appDir: true,
+    serverActions: {
+      timeout: 300000, // 5분
+    },
   },
   // fix all before production. Now it slow the develop speed.
   eslint: {
@@ -18,4 +21,11 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = {
+  ...nextConfig,
+  experimental: {
+    serverActions: {
+      timeout: 300000, // 5분
+    },
+  },
+}
