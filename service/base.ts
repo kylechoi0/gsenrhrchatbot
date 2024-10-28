@@ -3,7 +3,7 @@ import Toast from '@/app/components/base/toast'
 import type { AnnotationReply, MessageEnd, MessageReplace, ThoughtItem } from '@/app/components/chat/type'
 import type { VisionFile } from '@/types/app'
 
-const TIME_OUT = 300000 // 5분으로 증가
+const TIME_OUT = 180000 // 3분으로 조정 (Vercel 제한 고려)
 
 const ContentType = {
   json: 'application/json',
@@ -18,6 +18,8 @@ const baseOptions = {
   credentials: 'include',
   headers: new Headers({
     'Content-Type': ContentType.json,
+    'Connection': 'keep-alive',
+    'Keep-Alive': 'timeout=180', // 3분
   }),
   redirect: 'follow',
   timeout: TIME_OUT,
@@ -149,7 +151,7 @@ function unicodeToChar(text: string) {
   })
 }
 
-const handleStream = (
+const handleStream = async (
   response: Response,
   onData: IOnData,
   onCompleted?: IOnCompleted,
@@ -170,92 +172,97 @@ const handleStream = (
   let buffer = ''
   let bufferObj: Record<string, any>
   let isFirstMessage = true
-  function read() {
-    let hasError = false
-    reader?.read().then((result: any) => {
-      if (result.done) {
-        onCompleted && onCompleted()
-        return
+  let timeoutId: NodeJS.Timeout
+
+  const resetTimeout = () => {
+    if (timeoutId)
+      clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => {
+      onData('', false, {
+        conversationId: undefined,
+        messageId: '',
+        errorMessage: '응답 시간 초과',
+      })
+      onCompleted?.(true)
+    }, TIME_OUT)
+  }
+
+  try {
+    while (true) {
+      resetTimeout()
+      const { done, value } = await reader!.read()
+
+      if (done) {
+        if (timeoutId)
+          clearTimeout(timeoutId)
+        onCompleted?.()
+        break
       }
-      buffer += decoder.decode(result.value, { stream: true })
+
+      buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
-      try {
-        lines.forEach((message) => {
-          if (message.startsWith('data: ')) { // check if it starts with data:
-            try {
-              bufferObj = JSON.parse(message.substring(6)) as Record<string, any>// remove data: and parse as json
-            }
-            catch (e) {
-              // mute handle message cut off
-              onData('', isFirstMessage, {
-                conversationId: bufferObj?.conversation_id,
-                messageId: bufferObj?.message_id,
-              })
-              return
-            }
-            if (bufferObj.status === 400 || !bufferObj.event) {
-              onData('', false, {
-                conversationId: undefined,
-                messageId: '',
-                errorMessage: bufferObj?.message,
-                errorCode: bufferObj?.code,
-              })
-              hasError = true
-              onCompleted?.(true)
-              return
-            }
-            if (bufferObj.event === 'message' || bufferObj.event === 'agent_message') {
-              // can not use format here. Because message is splited.
+
+      for (const message of lines) {
+        if (!message.startsWith('data: '))
+          continue
+
+        try {
+          bufferObj = JSON.parse(message.substring(6))
+
+          if (bufferObj.status === 400 || !bufferObj.event) {
+            onData('', false, {
+              conversationId: undefined,
+              messageId: '',
+              errorMessage: bufferObj?.message,
+              errorCode: bufferObj?.code,
+            })
+            onCompleted?.(true)
+            return
+          }
+
+          switch (bufferObj.event) {
+            case 'message':
+            case 'agent_message':
               onData(unicodeToChar(bufferObj.answer), isFirstMessage, {
                 conversationId: bufferObj.conversation_id,
                 taskId: bufferObj.task_id,
                 messageId: bufferObj.id,
               })
               isFirstMessage = false
-            }
-            else if (bufferObj.event === 'agent_thought') {
+              break
+            case 'agent_thought':
               onThought?.(bufferObj as ThoughtItem)
-            }
-            else if (bufferObj.event === 'message_file') {
-              onFile?.(bufferObj as VisionFile)
-            }
-            else if (bufferObj.event === 'message_end') {
+              break
+            case 'message_end':
               onMessageEnd?.(bufferObj as MessageEnd)
-            }
-            else if (bufferObj.event === 'message_replace') {
+              break
+            case 'message_replace':
               onMessageReplace?.(bufferObj as MessageReplace)
-            }
-            else if (bufferObj.event === 'workflow_started') {
+              break
+            case 'workflow_started':
               onWorkflowStarted?.(bufferObj as WorkflowStartedResponse)
-            }
-            else if (bufferObj.event === 'workflow_finished') {
+              break
+            case 'workflow_finished':
               onWorkflowFinished?.(bufferObj as WorkflowFinishedResponse)
-            }
-            else if (bufferObj.event === 'node_started') {
-              onNodeStarted?.(bufferObj as NodeStartedResponse)
-            }
-            else if (bufferObj.event === 'node_finished') {
-              onNodeFinished?.(bufferObj as NodeFinishedResponse)
-            }
+              break
           }
-        })
-        buffer = lines[lines.length - 1]
+        }
+        catch (e) {
+          console.error('Message processing error:', e)
+        }
       }
-      catch (e) {
-        onData('', false, {
-          conversationId: undefined,
-          messageId: '',
-          errorMessage: `${e}`,
-        })
-        hasError = true
-        onCompleted?.(true)
-        return
-      }
-      if (!hasError)
-        read()
-    })
+      buffer = lines[lines.length - 1]
+    }
   }
-  read()
+  catch (error) {
+    console.error('Stream processing error:', error)
+    onData('', false, {
+      conversationId: undefined,
+      messageId: '',
+      errorMessage: `${error}`,
+    })
+    onCompleted?.(true)
+  }
 }
 
 const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: IOtherOptions) => {

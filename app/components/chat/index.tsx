@@ -100,25 +100,48 @@ const Chat: FC<IChatProps> = ({
   }
 
   useEffect(() => {
-    const messageObserver = new MutationObserver((mutations) => {
-      const hasContentChanges = mutations.some(mutation =>
-        mutation.type === 'characterData'
-        || mutation.type === 'childList'
-        || mutation.addedNodes.length > 0,
-      )
-      if (hasContentChanges)
-        scrollToBottom()
-    })
+    let observer: MutationObserver | null = null
+    const timeoutIds: NodeJS.Timeout[] = []
 
-    if (chatListRef.current) {
-      messageObserver.observe(chatListRef.current, {
-        childList: true,
-        subtree: true,
-        characterData: true,
+    try {
+      observer = new MutationObserver((mutations) => {
+        const timeoutId = setTimeout(() => {
+          if (chatListRef.current) {
+            const hasContentChanges = mutations.some(mutation =>
+              mutation.type === 'characterData'
+              || mutation.type === 'childList'
+              || (mutation.addedNodes && mutation.addedNodes.length > 0),
+            )
+            if (hasContentChanges)
+              requestAnimationFrame(() => scrollToBottom())
+          }
+        }, 100)
+        timeoutIds.push(timeoutId)
       })
+
+      if (chatListRef.current) {
+        observer.observe(chatListRef.current, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        })
+      }
+    }
+    catch (error) {
+      console.error('Observer setup error:', error)
     }
 
-    return () => messageObserver.disconnect()
+    return () => {
+      timeoutIds.forEach(id => clearTimeout(id))
+      if (observer) {
+        try {
+          observer.disconnect()
+        }
+        catch (error) {
+          console.error('Observer disconnect error:', error)
+        }
+      }
+    }
   }, [])
 
   // 채팅 목록이나 응답 상태가 변경될 때도 스크롤
