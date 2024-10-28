@@ -7,7 +7,7 @@ export const APP_INFO: AppInfo = {
   description: '',
   copyright: '',
   privacy_policy: '',
-  default_language: 'en',
+  default_language: 'ko', // 'en'에서 'ko'로 변경
 }
 
 export const isShowPrompt = false
