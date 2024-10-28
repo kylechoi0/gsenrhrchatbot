@@ -123,7 +123,7 @@ const Chat: FC<IChatProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* 메시지 영역 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-[100px]">
         <div className="space-y-[30px]" ref={chatListRef}>
           {chatList.map((item) => {
             if (item.isAnswer) {
@@ -151,52 +151,54 @@ const Chat: FC<IChatProps> = ({
 
       {/* 입력창 영역 */}
       {!isHideSendInput && (
-        <div className="flex-shrink-0 px-4 pb-4 bg-white">
-          <div className="relative bg-white rounded-2xl border border-gray-200 hover:border-gray-300 shadow-sm transition-colors">
-            {visionConfig?.enabled && (
-              <div className="absolute left-4 bottom-[15px] z-10">
-                <ChatImageUploader
-                  settings={visionConfig}
-                  onUpload={onUpload}
-                  disabled={files.length >= visionConfig.number_limits}
-                />
-              </div>
-            )}
+        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100">
+          <div className="max-w-4xl mx-auto px-4 py-3">
+            <div className="relative bg-white rounded-2xl border border-gray-200 hover:border-gray-300 shadow-sm transition-colors">
+              {visionConfig?.enabled && (
+                <div className="absolute left-4 bottom-[15px] z-10">
+                  <ChatImageUploader
+                    settings={visionConfig}
+                    onUpload={onUpload}
+                    disabled={files.length >= visionConfig.number_limits}
+                  />
+                </div>
+              )}
 
-            {files.length > 0 && (
-              <div className="px-4 pt-4">
-                <ImageList
-                  list={files}
-                  onRemove={onRemove}
-                  onReUpload={onReUpload}
-                  onImageLinkLoadSuccess={onImageLinkLoadSuccess}
-                  onImageLinkLoadError={onImageLinkLoadError}
-                />
-              </div>
-            )}
+              {files.length > 0 && (
+                <div className="px-4 pt-4">
+                  <ImageList
+                    list={files}
+                    onRemove={onRemove}
+                    onReUpload={onReUpload}
+                    onImageLinkLoadSuccess={onImageLinkLoadSuccess}
+                    onImageLinkLoadError={onImageLinkLoadError}
+                  />
+                </div>
+              )}
 
-            <div className="relative flex items-end">
-              <Textarea
-                className={`
-                  w-full px-4 py-[14px] text-[15px] leading-[1.6] text-gray-700
-                  outline-none resize-none bg-transparent
-                  ${visionConfig?.enabled ? 'pl-[52px]' : ''}
-                  ${files.length > 0 ? 'mt-2' : ''}
-                `}
-                value={query}
-                onChange={handleContentChange}
-                onKeyUp={handleKeyUp}
-                onKeyDown={handleKeyDown}
-                placeholder="메시지를 입력하세요..."
-                autoSize={{ minRows: 1, maxRows: 5 }}
-              />
-              <div className="absolute right-2 bottom-[10px] flex items-center">
-                <button
-                  className={`${styles.sendBtn} w-[32px] h-[32px] rounded-lg cursor-pointer transition-all duration-200 
-                    ${query.trim() ? 'opacity-100 hover:bg-blue-50' : 'opacity-50 cursor-not-allowed'}`}
-                  onClick={handleSend}
-                  disabled={!query.trim()}
+              <div className="relative flex items-end">
+                <Textarea
+                  className={`
+                    w-full px-4 py-[14px] text-[15px] leading-[1.6] text-gray-700
+                    outline-none resize-none bg-transparent
+                    ${visionConfig?.enabled ? 'pl-[52px]' : ''}
+                    ${files.length > 0 ? 'mt-2' : ''}
+                  `}
+                  value={query}
+                  onChange={handleContentChange}
+                  onKeyUp={handleKeyUp}
+                  onKeyDown={handleKeyDown}
+                  placeholder="메시지를 입력하세요..."
+                  autoSize={{ minRows: 1, maxRows: 5 }}
                 />
+                <div className="absolute right-2 bottom-[10px] flex items-center">
+                  <button
+                    className={`${styles.sendBtn} w-[32px] h-[32px] rounded-lg cursor-pointer transition-all duration-200 
+                      ${query.trim() ? 'opacity-100 hover:bg-blue-50' : 'opacity-50 cursor-not-allowed'}`}
+                    onClick={handleSend}
+                    disabled={!query.trim()}
+                  />
+                </div>
               </div>
             </div>
           </div>

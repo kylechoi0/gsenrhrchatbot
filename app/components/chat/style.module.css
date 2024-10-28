@@ -80,8 +80,12 @@
 
 .sendBtn:hover:not(:disabled) {
   background-image: url(./icons/send-active.svg);
-  background-color: #EBF5FF;
+  background-color: #4ADE8020;
   transform: scale(1.05);
+}
+
+.sendBtn:focus:not(:disabled) {
+  background-color: #4ADE8030;
 }
 
 .sendBtn:disabled {
@@ -95,6 +99,7 @@
 
 .textArea:focus+div .sendBtn {
   background-image: url(./icons/send-active.svg);
+  background-color: #4ADE8010;
 }
 
 .scrollbar-hide {
