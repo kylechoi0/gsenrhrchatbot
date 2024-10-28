@@ -82,26 +82,70 @@ const Chat: FC<IChatProps> = ({
     onClear,
   } = useImageFiles()
 
+  const scrollToBottom = () => {
+    if (chatListRef.current) {
+      const scrollElement = chatListRef.current
+      const isScrolledToBottom = scrollElement.scrollHeight - scrollElement.clientHeight <= scrollElement.scrollTop + 100
+
+      // 스크롤이 거의 하단에 있거나, 새 메시지가 추가된 경우에만 스크롤
+      if (isScrolledToBottom || isResponding) {
+        setTimeout(() => {
+          scrollElement.scrollTo({
+            top: scrollElement.scrollHeight,
+            behavior: 'smooth',
+          })
+        }, 100)
+      }
+    }
+  }
+
   useEffect(() => {
-    if (chatListRef.current)
-      chatListRef.current.scrollTop = chatListRef.current.scrollHeight
+    const messageObserver = new MutationObserver((mutations) => {
+      const hasContentChanges = mutations.some(mutation =>
+        mutation.type === 'characterData'
+        || mutation.type === 'childList'
+        || mutation.addedNodes.length > 0,
+      )
+      if (hasContentChanges)
+        scrollToBottom()
+    })
+
+    if (chatListRef.current) {
+      messageObserver.observe(chatListRef.current, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      })
+    }
+
+    return () => messageObserver.disconnect()
+  }, [])
+
+  // 채팅 목록이나 응답 상태가 변경될 때도 스크롤
+  useEffect(() => {
+    scrollToBottom()
   }, [chatList, isResponding])
 
   const handleSend = () => {
     if (!valid() || (checkCanSend && !checkCanSend()))
       return
+
     onSend(query, files.filter(file => file.progress !== -1).map(fileItem => ({
       type: 'image',
       transfer_method: fileItem.type,
       url: fileItem.url,
       upload_file_id: fileItem.fileId,
     })))
+
     if (!files.find(item => item.type === TransferMethod.local_file && !item.fileId)) {
       if (files.length)
         onClear()
       if (!isResponding)
         setQuery('')
     }
+
+    // 메시지 전송 후 스크롤
+    setTimeout(scrollToBottom, 100)
   }
 
   const handleKeyUp = (e: any) => {
@@ -123,8 +167,8 @@ const Chat: FC<IChatProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* 메시지 영역 */}
-      <div className="flex-1 overflow-y-auto pb-[100px]">
-        <div className="space-y-[30px]" ref={chatListRef}>
+      <div className="flex-1 overflow-y-auto" ref={chatListRef}>
+        <div className="space-y-[30px] pb-[100px]">
           {chatList.map((item) => {
             if (item.isAnswer) {
               const isLast = item.id === chatList[chatList.length - 1].id
