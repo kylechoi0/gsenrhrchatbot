@@ -616,7 +616,7 @@ const Main: FC = () => {
 
   if (!APP_ID || !APP_INFO || !promptConfig)
     return <Loading type='app' />
-
+  // 수정
   return (
     <div className='flex flex-col h-screen bg-gray-50'>
       <Header
