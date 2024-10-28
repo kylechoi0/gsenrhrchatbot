@@ -13,6 +13,8 @@ const initI18next = async (lng: Locale, ns: string) => {
       lng: lng === 'zh-Hans' ? 'zh' : lng,
       ns,
       fallbackLng: 'en',
+      supportedLngs: ['en', 'ko', 'ja', 'zh', 'es', 'vi'],
+      load: 'currentOnly',
     })
   return i18nInstance
 }

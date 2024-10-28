@@ -1,3 +1,4 @@
+import type { Locale } from '@/i18n'
 import type { AppInfo } from '@/types/app'
 export const APP_ID = `${process.env.NEXT_PUBLIC_APP_ID}`
 export const API_KEY = `${process.env.NEXT_PUBLIC_APP_KEY}`
@@ -7,7 +8,7 @@ export const APP_INFO: AppInfo = {
   description: '',
   copyright: '',
   privacy_policy: '',
-  default_language: 'ko', // 'en'에서 'ko'로 변경
+  default_language: 'ko' as Locale,
 }
 
 export const isShowPrompt = false
