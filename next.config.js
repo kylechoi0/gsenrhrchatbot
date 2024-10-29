@@ -28,4 +28,9 @@ module.exports = {
       timeout: 300000, // 5분
     },
   },
+  // Pro plan에서 제공하는 최대 메모리 활용
+  functions: {
+    memory: 1024, // 1GB 메모리 할당
+    maxDuration: 300, // 5분
+  },
 }
